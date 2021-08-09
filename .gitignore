@@ -27,3 +27,10 @@ npm-debug.log
 
 client/cypress/screenshots
 client/cypress/videos
+
+
+embulk/work/
+logstash/pipeline/
+
+metabase/*
+mongodb/data/db/*

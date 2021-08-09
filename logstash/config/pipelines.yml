@@ -1,0 +1,4 @@
+- pipeline.id: coronavirus
+  path.config: "/usr/share/logstash/pipeline/twitter_cornonavirus.conf"
+- pipeline.id: youtube_search
+  path.config: "/usr/share/logstash/pipeline/youtube_search.conf"
