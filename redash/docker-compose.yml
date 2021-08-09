@@ -1,11 +1,8 @@
 # This configuration file is for the **development** setup.
 # For a production example please refer to getredash/setup repository on GitHub.
-version: "2.2"
+version: "3"
 x-redash-service: &redash-service
-  build:
-    context: .
-    args:
-      skip_frontend_build: "true"
+  image: redash
   volumes:
     - .:/app
 x-redash-environment: &redash-environment
@@ -16,9 +13,20 @@ x-redash-environment: &redash-environment
   REDASH_MAIL_DEFAULT_SENDER: "redash@example.com"
   REDASH_MAIL_SERVER: "email"
   REDASH_ENFORCE_CSRF: "true"
+networks:
+  devmeter_net:
+    external: true
+x-redash-netowrk: &redash-networks
+  networks:
+    - devmeter_net
 services:
   server:
     <<: *redash-service
+    <<: *redash-networks
+    container_name: redash_server
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.16
     command: dev_server
     depends_on:
       - postgres
@@ -31,6 +39,11 @@ services:
       PYTHONUNBUFFERED: 0
   scheduler:
     <<: *redash-service
+    <<: *redash-networks
+    container_name: redash_scheduler
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.15
     command: dev_scheduler
     depends_on:
       - server
@@ -38,6 +51,11 @@ services:
       <<: *redash-environment
   worker:
     <<: *redash-service
+    <<: *redash-networks
+    container_name: redash_worker
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.14
     command: dev_worker
     depends_on:
       - server
@@ -45,9 +63,19 @@ services:
       <<: *redash-environment
       PYTHONUNBUFFERED: 0
   redis:
+    <<: *redash-networks
+    container_name: redash_redis
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.13
     image: redis:3-alpine
-    restart: unless-stopped
+    restart: always #unless-stopped
   postgres:
+    <<: *redash-networks
+    container_name: redash_postgres
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.12
     image: postgres:9.5-alpine
     # The following turns the DB into less durable, but gains significant performance improvements for the tests run (x3
     # improvement on my personal machine). We should consider moving this into a dedicated Docker Compose configuration for
@@ -55,11 +83,18 @@ services:
     ports:
       - "15432:5432"
     command: "postgres -c fsync=off -c full_page_writes=off -c synchronous_commit=OFF"
-    restart: unless-stopped
+    restart: always #unless-stopped
     environment:
       POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - ./opt/postgres-data:/var/lib/postgresql/data
   email:
+    <<: *redash-networks
+    container_name: redash_email
+    networks:
+      devmeter_net:
+        ipv4_address: 172.22.0.11
     image: djfarrelly/maildev
     ports:
       - "1080:80"
-    restart: unless-stopped
+    restart: always #unless-stopped
